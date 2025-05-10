@@ -1,0 +1,5 @@
+User-agent: *
+
+Allow: https://sashite.dev/
+
+Sitemap: https://sashite.dev/sitemap.xml
