@@ -83,14 +83,29 @@ The following are examples of valid FEEN strings representing the initial positi
 
 ---
 
+## Piece Representation
+
+FEEN relies on the Piece Name Notation (PNN) specification for representing individual pieces. This provides a consistent way to identify pieces and their states across various board games.
+
+Key points from PNN relevant to FEEN:
+
+- Pieces are denoted using single ASCII characters `a-z` or `A-Z`.
+- Optional modifiers may be applied to pieces **on the board**:
+  - A prefix: `-` or `+`
+  - A suffix: `=`, `<`, or `>`
+- Pieces in hand (Field 2) must use only the base letter without any modifiers.
+- Case distinguishes between players (uppercase for first player, lowercase for second).
+
+Refer to the full [PNN specification](https://sashite.dev/documents/pnn/1.0.0/) for detailed information about piece representation.
+
+---
+
 ## Field 1: `<PIECE-PLACEMENT>`
 
 This field encodes the spatial distribution of pieces across the board. The position is always expressed **from the point of view of the player who plays first in the initial position**, according to the standard rules of the game(s) represented.
 
 - The board is traversed starting from the outermost dimension and proceeding inward, dimension by dimension.
-- **Pieces** are denoted using single ASCII characters `a-z` or `A-Z`. Optional modifiers may be:
-  - A prefix: `-` or `+`
-  - A suffix: `=`, `<`, or `>`
+- **Pieces** are denoted using PNN notation.
 - **Empty spaces** are compressed using digits `1`-`n`, representing consecutive empty cells.
 - **Dimension separators**:
   - `/` separates consecutive elements of the first inner dimension.
@@ -101,30 +116,11 @@ This generalization allows FEEN to describe *n*-dimensional boards with arbitrar
 
 ---
 
-### Optional Semantics for Piece Modifiers
-
-FEEN allows for optional **prefixes** and **suffixes** to be applied to piece identifiers. These modifiers are semantically undefined within the FEEN specification itself, but are intended to convey optional metadata about the state or capabilities of pieces. Their interpretation is left to the consuming application or game engine.
-
-#### Prefixes
-
-- `-` — May indicate that a piece is in a diminished or restricted state.
-- `+` — May indicate that a piece is in an alternative or special state.
-
-#### Suffixes
-
-- `=` — May denote a dual-option status or bidirectional capability.
-- `<` — May denote a left-side constraint or condition, relative to the initial player's perspective.
-- `>` — May denote a right-side constraint or condition, relative to the initial player's perspective.
-
-These modifiers provide a framework for representing piece-specific conditions while maintaining FEEN's rule-agnostic design.
-
----
-
 ## Field 2: `<PIECES-IN-HAND>`
 
 This field lists the pieces available for future placement on the board:
 
-- Droppable pieces (also referred to as _pieces in hand_) are represented using their symbolic identifiers, as defined in `<PIECE-PLACEMENT>`, including case but without modifiers (prefixes or suffixes).
+- Droppable pieces (also referred to as _pieces in hand_) are represented using their symbolic identifiers, as defined in PNN, including case but **without modifiers** (prefixes or suffixes).
 - If multiple occurrences of the same piece are available, they must be grouped and preceded by a number indicating their count.
   - For a single occurrence, no numeric prefix is used (e.g., "P").
   - For two or more occurrences, a numeric prefix must be used (e.g., "2P", "10P").
@@ -200,13 +196,7 @@ The following Backus-Naur Form (BNF) grammar defines the FEEN format. It support
 
 <cell> ::= <piece> | <number>
 
-<piece> ::= <letter>
-         | <prefix> <letter>
-         | <letter> <suffix>
-         | <prefix> <letter> <suffix>
-
-<prefix> ::= "+" | "-"
-<suffix> ::= "=" | "<" | ">"
+<piece> ::= <pnn-piece>              ; As defined in the PNN specification
 
 <number> ::= <non-zero-digit>
           | <non-zero-digit> <digits>
@@ -221,16 +211,6 @@ The following Backus-Naur Form (BNF) grammar defines the FEEN format. It support
                   | <slash> <separator-tail> ; additional nesting: //, ///, etc.
 
 <slash> ::= "/"
-
-<letter> ::= <letter-lowercase> | <letter-uppercase>
-
-<letter-lowercase> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
-                     | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
-                     | "u" | "v" | "w" | "x" | "y" | "z"
-
-<letter-uppercase> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J"
-                     | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
-                     | "U" | "V" | "W" | "X" | "Y" | "Z"
 ```
 
 ---
@@ -336,6 +316,17 @@ The following Backus-Naur Form (BNF) grammar defines the FEEN format. It support
                      | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
                      | "U" | "V" | "W" | "X" | "Y" | "Z"
 ```
+
+---
+
+## Related Specifications
+
+FEEN is part of a family of specifications designed to provide a comprehensive and rule-agnostic representation system for abstract strategy board games:
+
+- [Piece Name Notation (PNN)](https://sashite.dev/documents/pnn/1.0.0/) - Defines the format for representing individual pieces.
+- [Portable Move Notation (PMN)](https://sashite.dev/documents/pmn/1.0.0/) - Defines the format for representing moves and actions.
+
+Together, these specifications form a complete system for representing both static positions (FEEN) and dynamic transitions (PMN) in arbitrary board games.
 
 ---
 

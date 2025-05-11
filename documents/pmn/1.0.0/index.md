@@ -2,7 +2,7 @@
 
 **Version**: 1.0.0
 **Author**: [Sashité](https://sashite.com/)
-**Published**: May 11, 2025
+**Published**: May 1, 2025
 **License**: MIT License
 
 ---
@@ -53,7 +53,7 @@ Each action item must include the following fields:
 
 1. **`src_square`** — An unsigned integer representing the source coordinate, or `null` for placements from outside the board.
 2. **`dst_square`** — An unsigned integer representing the destination coordinate (required).
-3. **`piece_name`** — A string identifier for the piece being moved (required).
+3. **`piece_name`** — A string identifier for the piece being moved (required), using the PNN format.
 4. **`piece_hand`** — A string identifier for any captured piece that becomes droppable (also referred to as a _piece in hand_), or `null` if none.
 
 Notes about `piece_hand`:
@@ -96,61 +96,22 @@ For boards with dimensions beyond the standard rectilinear forms, the following 
 
 ## Piece Representation
 
-### Formal Definition of Piece Identifiers
+PMN relies on the Piece Name Notation (PNN) specification for representing pieces in the `piece_name` and `piece_hand` fields.
 
-The piece identifiers in PMN follow specific formal rules:
+Key points from PNN relevant to PMN:
 
-#### BNF Grammar for `piece_name`
+- For `piece_name`:
+  - Pieces are identified by single ASCII characters (`a-z` or `A-Z`).
+  - Optional modifiers may be applied:
+    - Prefix modifiers: `-` or `+` (e.g., `+P` for a promoted piece)
+    - Suffix modifiers: `=`, `<`, or `>` (e.g., `K=` for a king with castling rights)
+  - Case typically distinguishes between players (uppercase for one player, lowercase for the other).
 
-```bnf
-<piece> ::= <letter>
-         | <prefix> <letter>
-         | <letter> <suffix>
-         | <prefix> <letter> <suffix>
+- For `piece_hand`:
+  - Only the base letter identifier is used (e.g., `P` or `p`).
+  - No modifiers (prefixes or suffixes) are permitted.
 
-<prefix> ::= "+" | "-"
-<suffix> ::= "=" | "<" | ">"
-
-<letter> ::= <letter-lowercase> | <letter-uppercase>
-
-<letter-lowercase> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
-                     | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
-                     | "u" | "v" | "w" | "x" | "y" | "z"
-
-<letter-uppercase> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J"
-                     | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
-                     | "U" | "V" | "W" | "X" | "Y" | "Z"
-```
-
-#### BNF Grammar for `piece_hand`
-
-```bnf
-<piece-hand> ::= <letter>
-
-<letter> ::= <letter-lowercase> | <letter-uppercase>
-
-<letter-lowercase> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
-                     | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
-                     | "u" | "v" | "w" | "x" | "y" | "z"
-
-<letter-uppercase> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J"
-                     | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
-                     | "U" | "V" | "W" | "X" | "Y" | "Z"
-```
-
-### Piece Naming Semantics
-
-- Piece identifiers are case-sensitive strings.
-- Case typically distinguishes between players (e.g., uppercase for one player, lowercase for the other).
-- Modifiers may be applied to `piece_name` identifiers to denote special states:
-  - Prefix modifiers: `-` or `+` (e.g., `+P` for a promoted piece)
-  - Suffix modifiers: `=`, `<`, or `>` (e.g., `K=` for a king with castling rights)
-- Modifiers are NOT permitted in `piece_hand` values.
-
-### Null Values
-
-- `null` is a valid value for the `src_square` field, indicating a piece placement from outside the board.
-- `null` is a valid value for the `piece_hand` field, indicating no piece was captured or retained.
+Refer to the full [PNN specification](https://sashite.dev/documents/pnn/1.0.0/) for detailed information about piece representation.
 
 ---
 
@@ -276,9 +237,14 @@ a chess knight (N) captures a Makruk rook (r) at destination square 44.
 
 ---
 
-## Compatible Formats
+## Related Specifications
 
-PMN can be used alongside other notation formats such as Forsyth-Edwards Enhanced Notation (FEEN) for representing board positions. While PMN specializes in move representation, these complementary formats focus on position representation, allowing for a complete description of a game's state and transitions.
+PMN is part of a family of specifications designed to provide a comprehensive and rule-agnostic representation system for abstract strategy board games:
+
+- [Piece Name Notation (PNN)](https://sashite.dev/documents/pnn/1.0.0/) - Defines the format for representing individual pieces.
+- [Forsyth-Edwards Enhanced Notation (FEEN)](https://sashite.dev/documents/feen/1.0.0/) - Defines the format for representing board positions.
+
+Together, these specifications form a complete system for representing both static positions (FEEN) and dynamic transitions (PMN) in arbitrary board games.
 
 ---
 
@@ -288,7 +254,7 @@ This section lists available libraries and tools that implement the PMN specific
 
 ### Ruby
 
-- **[PMN.rb](https://github.com/sashite/pmn.rb)** - Full implementation of the PMN specification for Ruby, including conversion from/to various formats, as well as support for arbitrary dimensions.
+- **[Pmn.rb](https://github.com/sashite/pmn.rb)** - Full implementation of the PMN specification for Ruby, including conversion from/to various formats, as well as support for arbitrary dimensions.
 
 ---
 
