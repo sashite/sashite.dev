@@ -72,13 +72,13 @@ The following are examples of valid FEEN strings representing the initial positi
 * **Chess** *(Western chess, starting position)*:
 
   ```txt
-  rnbqk=bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK=BNR - CHESS/chess
+  r'nbqkbnr'/pppppppp/8/8/8/8/PPPPPPPP/R'NBQKBNR' - CHESS/chess
   ```
 
 * **Chess** *(after 1.e4)*:
 
   ```txt
-  rnbqk=bnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQK=BNR - chess/CHESS
+  r'nbqkbnr'/pppppppp/8/8/4P3/8/PPPP1PPP/R'NBQKBNR' - chess/CHESS
   ```
 
 ---
@@ -92,7 +92,7 @@ Key points from PNN relevant to FEEN:
 - Pieces are denoted using single ASCII characters `a-z` or `A-Z`.
 - Optional modifiers may be applied to pieces **on the board**:
   - A prefix: `-` or `+`
-  - A suffix: `=`, `<`, or `>`
+  - A suffix: `'`
 - Pieces in hand (Field 2) must use only the base letter without any modifiers.
 - Case distinguishes between players (uppercase for first player, lowercase for second).
 

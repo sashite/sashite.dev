@@ -43,7 +43,7 @@ A piece is represented by an identifier composed of a single ASCII letter, optio
 Where:
 * `<letter>` is a single ASCII letter (`a-z` or `A-Z`).
 * `<prefix>` is an optional modifier preceding the letter (`+` or `-`).
-* `<suffix>` is an optional modifier following the letter (`=`, `<`, or `>`).
+* `<suffix>` is an optional modifier following the letter (`'`).
 
 ---
 
@@ -55,11 +55,9 @@ Modifiers provide a mechanism to express the state of pieces on the board withou
 
 | Modifier | Meaning |
 |----------|---------|
-| `+`      | Alternative or enhanced state |
-| `-`      | Diminished or restricted state |
-| `=`      | Bidirectional or dual-option state |
-| `<`      | Left-side constraint or condition |
-| `>`      | Right-side constraint or condition |
+| `+`      | Enhanced state |
+| `-`      | Diminished state |
+| `'`      | Intermediate state |
 
 ### Modifier Application Rules
 
@@ -79,7 +77,7 @@ Modifiers provide a mechanism to express the state of pieces on the board withou
          | <prefix> <letter> <suffix>
 
 <prefix> ::= "+" | "-"
-<suffix> ::= "=" | "<" | ">"
+<suffix> ::= "'"
 
 <letter> ::= <letter-lowercase> | <letter-uppercase>
 
@@ -101,7 +99,7 @@ The following JSON Schema defines the validation pattern for a PNN piece string:
 ```json
 {
   "type": "string",
-  "pattern": "^[-+]?[a-zA-Z][=<>]?$"
+  "pattern": "^[-+]?[a-zA-Z]['']?$"
 }
 ```
 

@@ -82,8 +82,6 @@ Common board geometries map to the following coordinate ranges:
 | Chess     | 8×8              | 0–63             |
 | Shogi     | 9×9              | 0–80             |
 | Xiangqi   | 9×10             | 0–89             |
-| Go        | 19×19            | 0–360            |
-| Draughts  | 10×10            | 0–99             |
 
 ### Arbitrary Dimensions
 
@@ -104,7 +102,7 @@ Key points from PNN relevant to PMN:
   - Pieces are identified by single ASCII characters (`a-z` or `A-Z`).
   - Optional modifiers may be applied:
     - Prefix modifiers: `-` or `+` (e.g., `+P` for a promoted piece)
-    - Suffix modifiers: `=`, `<`, or `>` (e.g., `K=` for a king with castling rights)
+    - Suffix modifier: `'` (e.g., `R'` for a rook that can be used for castling, or `P'` for a pawn that can be captured _en passant_)
   - Case typically distinguishes between players (uppercase for one player, lowercase for the other).
 
 - For `piece_hand`:
@@ -137,7 +135,7 @@ The following JSON Schema formally defines the structure of a PMN record:
       },
       "piece_name": {
         "type": "string",
-        "pattern": "^[-+]?[a-zA-Z][=<>]?$"
+        "pattern": "^[-+]?[a-zA-Z][']?$"
       },
       "piece_hand": {
         "type": ["string", "null"],
@@ -178,8 +176,8 @@ A pawn is dropped onto square 27 from the player's hand (a Shogi drop move).
 
 White castles kingside:
 
-* The king moves from e1 (60) to g1 (62),
-* The rook moves from h1 (63) to f1 (61).
+* The king (`K`) moves from e1 (60) to g1 (62),
+* The rook (`R'`) moves from h1 (63) to f1 (61).
 
 Both moves are recorded as a composite action.
 
@@ -189,6 +187,8 @@ Both moves are recorded as a composite action.
   { "src_square": 63, "dst_square": 61, "piece_name": "R", "piece_hand": null }
 ]
 ```
+
+Note that after the castle, this rook is represented as `R`.
 
 ### Shogi: Promotion
 
@@ -201,7 +201,7 @@ The promoted piece is represented as `+P`.
 
 ### Shogi: Piece Capture
 
-A bishop (B) captures a promoted pawn (+p) at square 27. The captured pawn becomes a droppable piece for the bishop's owner.
+A bishop (`B`) captures a promoted pawn (`+p`) at square 27. The captured pawn becomes a droppable piece for the bishop's owner.
 
 ```json
 [{ "src_square": 36, "dst_square": 27, "piece_name": "B", "piece_hand": "P" }]
@@ -214,7 +214,7 @@ Note that even if the captured piece had a modifier on the board (such as `+p`),
 After White plays a double pawn move from e2 (52) to e4 (36),
 
 ```json
-[{ "src_square": 52, "dst_square": 36, "piece_name": "P", "piece_hand": null }]
+[{ "src_square": 52, "dst_square": 36, "piece_name": "P'", "piece_hand": null }]
 ```
 
 Black captures the pawn _en passant_ from d4 (35) to e3 (44):
@@ -229,7 +229,7 @@ Black captures the pawn _en passant_ from d4 (35) to e3 (44):
 ### Cross-Game Capture
 
 In a hybrid game (e.g., Chess-Makruk crossover),
-a chess knight (N) captures a Makruk rook (r) at destination square 44.
+a chess knight (`N`) captures a Makruk rook (`r`) at destination square 44.
 
 ```json
 [{ "src_square": 27, "dst_square": 44, "piece_name": "N", "piece_hand": null }]

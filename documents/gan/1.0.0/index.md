@@ -68,7 +68,7 @@ This ensures consistency with the FEEN specification's third field, which uses c
 
 | PNN   | GAN (First Player) | GAN (Second Player) |
 |-------|--------------------|--------------------|
-| `K=`  | `CHESS:K=`         | `chess:k=`         |
+| `K`   | `CHESS:K`          | `chess:k`          |
 | `Q`   | `CHESS:Q`          | `chess:q`          |
 | `R`   | `CHESS:R`          | `chess:r`          |
 | `B`   | `CHESS:B`          | `chess:b`          |
@@ -132,7 +132,7 @@ These examples show how GAN resolves ambiguities between pieces that would have 
                       | <prefix> <letter-lowercase> <suffix>
 
 <prefix> ::= "+" | "-"
-<suffix> ::= "=" | "<" | ">"
+<suffix> ::= "'"
 
 <letter-lowercase> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
                     | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
@@ -152,7 +152,7 @@ The following JSON Schema defines the validation pattern for a GAN actor string:
 ```json
 {
   "type": "string",
-  "pattern": "^([A-Z]+:[-+]?[A-Z][=<>]?|[a-z]+:[-+]?[a-z][=<>]?)$"
+  "pattern": "^([A-Z]+:[-+]?[A-Z][']?|[a-z]+:[-+]?[a-z][']?)$"
 }
 ```
 
