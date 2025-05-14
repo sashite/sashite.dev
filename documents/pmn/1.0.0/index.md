@@ -9,113 +9,78 @@
 
 ## Overview
 
-Portable Move Notation (PMN) is a rule-agnostic JSON-based format for representing moves in abstract strategy board games. It provides a consistent representation system for game actions across both traditional and non-traditional board games, supporting arbitrary dimensions and hybrid configurations while maintaining neutrality toward game-specific rules.
+Portable Move Notation (PMN) is a **rule‑agnostic**, JSON‑based format for describing **state‑changing actions** in abstract strategy board games.
+A PMN *record* lists those actions *sequentially*, allowing any engine to reproduce the exact, deterministic transformation of a game position—independent of the rules that validate or forbid such transformations.
+
+PMN deliberately **does not** embed legality, turn order, or game‑specific concepts such as check, mate, or repetition.
+Instead, it focuses on a *minimal yet exhaustive* vocabulary for moving, capturing, dropping, promoting, or otherwise transforming pieces on an arbitrary‑dimension board.
 
 ---
 
-## Properties
+## Core Concepts
 
-- PMN is **rule-agnostic** and does not encode game-specific legality, validity, or conditions.
-- PMN supports **arbitrary-dimensional** board configurations through a unified coordinate system.
-- PMN is **game-neutral**, providing a common structure applicable to all abstract strategy games with piece movement.
-- PMN facilitates **hybrid** or **cross-game** scenarios where multiple game types coexist.
-- PMN is designed for **deterministic representation** of all possible state transitions in piece-placement games.
+### Action Item
 
----
-
-## Constraints
-
-- PMN represents actions only, not the resulting state or legality of those actions.
-- PMN does not encode turn order, game phase, or similar dynamic properties.
-- PMN is concerned solely with the spatial transformation of game elements, not with the rules governing those transformations.
-
----
-
-## Format
-
-A PMN record consists of an array of one or more action items, where each action item is a JSON object with precisely defined fields:
+An *action item* is the atomic unit of PMN.
+Each item is a JSON object with four fields:
 
 ```json
-[
-  {
-    "src_square": <source-coordinate-or-null>,
-    "dst_square": <destination-coordinate>,
-    "piece_name": <piece-identifier>,
-    "piece_hand": <captured-piece-identifier-or-null>
-  },
-  ...
-]
+{
+  "src_square": <integer-or-null>,
+  "dst_square": <integer>,
+  "piece_name": <string>,
+  "piece_hand": <string-or-null>
+}
 ```
 
-### Action Item Fields
+The items in a PMN array **must be applied in the order they appear**.  This guarantees that composite moves—such as castling, en‑passant captures, or multi‑piece fairy moves—can be expressed unambiguously.
 
-Each action item must include the following fields:
+### Coordinate System
 
-1. **`src_square`** — An unsigned integer representing the source coordinate, or `null` for placements from outside the board.
-2. **`dst_square`** — An unsigned integer representing the destination coordinate (required).
-3. **`piece_name`** — A string identifier for the piece being moved (required), using the PNN format.
-4. **`piece_hand`** — A string identifier for any captured piece that becomes droppable (also referred to as a _piece in hand_), or `null` if none.
+* Coordinates are **unsigned integers** that *flatten* the board’s geometry.
+* The mapping is left‑to‑right, top‑to‑bottom for each additional dimension (least‑significant dimension varies fastest).
+* Engines are free to choose any board dimensions; PMN merely requires that *all participants agree* on the same mapping.
 
-Notes about `piece_hand`:
+### Piece Identifiers (PNN)
 
-- In some games (such as Shogi), when a piece is captured and becomes droppable, it is common practice to convert the piece's identifier to reflect its new ownership (by changing its casing). PMN does not enforce this convention; game engines are responsible for applying any game-specific ownership transformations.
-- In games where captured pieces are eliminated from play (such as Chess), this field must always be `null`.
-- Piece's identifier must be recorded without any modifiers (prefixes or suffixes).
+PMN reuses **Piece Name Notation (PNN)** for all piece strings.
+Review §PNN for the grammar; in short:
 
----
-
-## Coordinate System
-
-PMN uses a one-dimensional coordinate system to represent board positions:
-
-- All board positions are indexed using unsigned integers, starting from 0.
-- The coordinate system follows a flattened representation of the board's geometry.
-- For rectilinear boards, coordinates increase from left to right, then top to bottom (from the first player's perspective).
-- For higher-dimensional boards, the flattening order is standardized as follows: innermost dimensions vary most rapidly.
-
-### Common Board Dimensions
-
-Common board geometries map to the following coordinate ranges:
-
-| Game Type | Board Dimensions | Coordinate Range |
-|-----------|------------------|------------------|
-| Chess     | 8×8              | 0–63             |
-| Shogi     | 9×9              | 0–80             |
-| Xiangqi   | 9×10             | 0–89             |
-
-### Arbitrary Dimensions
-
-For boards with dimensions beyond the standard rectilinear forms, the following mapping applies:
-
-- For a board with dimensions d₁ × d₂ × ... × dₙ, the coordinate of position (i₁, i₂, ..., iₙ) is:
-  i₁ + i₂×d₁ + i₃×d₁×d₂ + ... + iₙ×d₁×d₂×...×dₙ₋₁
+* A piece on the board may have *one prefix* (`+` or `-`) and/or *one suffix* (`'`).
+* A piece in hand (reserve) **must be the bare letter**—no modifiers.
+* Case (**A–Z** vs **a–z**) distinguishes first‑player pieces from second‑player pieces.
 
 ---
 
-## Piece Representation
+## Semantics & Consequences
 
-PMN relies on the Piece Name Notation (PNN) specification for representing pieces in the `piece_name` and `piece_hand` fields.
+The meaning of each field is intentionally simple yet powerful:
 
-Key points from PNN relevant to PMN:
+| Field        | Semantics                                                                                                                                                                   |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src_square` | **Where the piece comes from.** `null` means “from hand / outside the board.”                                                                                               |
+| `dst_square` | **Where the piece ends up.** Always required.                                                                                                                               |
+| `piece_name` | **What now sits on `dst_square`.** It describes the *post‑action* state of that piece. Promotion, demotion, modifier stripping, colour change, etc. must be reflected here. |
+| `piece_hand` | **What (if anything) enters the mover’s reserve** as a result of this action. It must be a *bare* PNN letter or `null`.                                                     |
 
-- For `piece_name`:
-  - Pieces are identified by single ASCII characters (`a-z` or `A-Z`).
-  - Optional modifiers may be applied:
-    - Prefix modifiers: `-` or `+` (e.g., `+P` for a promoted piece)
-    - Suffix modifier: `'` (e.g., `R'` for a rook that can be used for castling, or `P'` for a pawn that can be captured _en passant_)
-  - Case typically distinguishes between players (uppercase for one player, lowercase for the other).
+Given those definitions, every action item produces **deterministic side‑effects**:
 
-- For `piece_hand`:
-  - Only the base letter identifier is used (e.g., `P` or `p`).
-  - No modifiers (prefixes or suffixes) are permitted.
+1. **Board Removal**
+   If `src_square` is not `null`, that square becomes *empty*.
+2. **Board Placement**
+   `dst_square` contains `piece_name` *after* the action.
+3. **Hand Addition**
+   If `piece_hand` is not `null`, add *one* such piece to the mover’s reserve.
+4. **Hand Removal**
+   If `src_square` is `null`, remove *one* unmodified copy of `piece_name` (letter only) from the mover’s reserve.
 
-Refer to the full [PNN specification](https://sashite.dev/documents/pnn/1.0.0/) for detailed information about piece representation.
+> PMN **does not** verify that the mover actually *had* such a piece in reserve, or that the capture is legal. Engines must enforce game rules on top of PMN.
+
+These consequences are **invariant**: they apply to Chess, Shogi, Xiangqi, Fairy variants, or any hybrid game.
 
 ---
 
-## JSON Schema Definition
-
-The following JSON Schema formally defines the structure of a PMN record:
+## JSON Schema (unchanged)
 
 ```json
 {
@@ -125,22 +90,10 @@ The following JSON Schema formally defines the structure of a PMN record:
   "items": {
     "type": "object",
     "properties": {
-      "src_square": {
-        "type": ["integer", "null"],
-        "minimum": 0
-      },
-      "dst_square": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "piece_name": {
-        "type": "string",
-        "pattern": "^[-+]?[a-zA-Z][']?$"
-      },
-      "piece_hand": {
-        "type": ["string", "null"],
-        "pattern": "^[a-zA-Z]$"
-      }
+      "src_square": { "type": ["integer", "null"], "minimum": 0 },
+      "dst_square": { "type": "integer", "minimum": 0 },
+      "piece_name": { "type": "string", "pattern": "^[-+]?[a-zA-Z]['']?$" },
+      "piece_hand": { "type": ["string", "null"], "pattern": "^[a-zA-Z]$" }
     },
     "required": ["dst_square", "piece_name"],
     "additionalProperties": false
@@ -153,33 +106,40 @@ The following JSON Schema formally defines the structure of a PMN record:
 
 ## Examples
 
-The following examples illustrate how PMN represents common move types.
-Coordinates refer to the flattened board representation.
+Coordinates below refer to the flattened mappings described earlier.
 
-### Chess: Initial Pawn Move
+### Shogi · Promotion
 
-A white pawn moves from e2 (coordinate 52) to e4 (coordinate 36).
+A pawn promotes upon reaching the enemy camp.
 
 ```json
-[{ "src_square": 52, "dst_square": 36, "piece_name": "P", "piece_hand": null }]
+[{ "src_square": 27, "dst_square": 18, "piece_name": "+P", "piece_hand": null }]
 ```
 
-### Shogi: Dropping a Pawn
+* **Before**: square 27 contained `P`.
+* **After**: square 27 is empty; square 18 contains `+P`.
 
-A pawn is dropped onto square 27 from the player's hand (a Shogi drop move).
+### Shogi · Capture → Piece in Hand
+
+A bishop captures a promoted pawn. The pawn enters the bishop‑owner’s hand **demoted** to its letter.
+
+```json
+[{ "src_square": 36, "dst_square": 27, "piece_name": "B", "piece_hand": "P" }]
+```
+
+* The captured board piece was `+p`; the reserved piece is `P`.
+
+### Shogi · Drop
+
+Dropping a pawn from hand to the board.
 
 ```json
 [{ "src_square": null, "dst_square": 27, "piece_name": "p", "piece_hand": null }]
 ```
 
-### Chess: Castling Kingside
+* Removes one `p` from hand; square 27 now contains `p`.
 
-White castles kingside:
-
-* The king (`K`) moves from e1 (60) to g1 (62),
-* The rook (`R'`) moves from h1 (63) to f1 (61).
-
-Both moves are recorded as a composite action.
+### Chess · Kingside Castling (Shortest Form)
 
 ```json
 [
@@ -188,48 +148,40 @@ Both moves are recorded as a composite action.
 ]
 ```
 
-Note that after the castle, this rook is represented as `R`.
+* The rook’s suffix (`R' → R`) is stripped to mark that it has moved and can no longer castle.
 
-### Shogi: Promotion
+### Chess · Castling with Dual‑Rook Suffix Removal
 
-A pawn moves from square 27 to 18 and promotes upon arrival.
-The promoted piece is represented as `+P`.
+If *both* rooks originally carried a suffix (`R'`), remove the suffix from the idle rook via a **zero‑distance action**:
 
 ```json
-[{ "src_square": 27, "dst_square": 18, "piece_name": "+P", "piece_hand": null }]
+[
+  { "src_square": 60, "dst_square": 62, "piece_name": "K", "piece_hand": null },
+  { "src_square": 63, "dst_square": 61, "piece_name": "R", "piece_hand": null },
+  { "src_square": 56, "dst_square": 56, "piece_name": "R", "piece_hand": null }
+]
 ```
 
-### Shogi: Piece Capture
+A zero‑distance move is legal in PMN because legality is outside this specification; it merely expresses *“replace whatever is on 56 by an un‑suffixed R.”*
 
-A bishop (`B`) captures a promoted pawn (`+p`) at square 27. The captured pawn becomes a droppable piece for the bishop's owner.
+### Chess · En Passant (for completeness)
 
-```json
-[{ "src_square": 36, "dst_square": 27, "piece_name": "B", "piece_hand": "P" }]
-```
-
-Note that even if the captured piece had a modifier on the board (such as `+p`), the `piece_hand` value must be recorded without any modifier (just `P`). The change in case from lowercase to uppercase indicates the piece's new ownership.
-
-### Chess: En Passant Capture
-
-After White plays a double pawn move from e2 (52) to e4 (36),
+White advances a pawn two squares; Black captures en passant.
 
 ```json
+// White
 [{ "src_square": 52, "dst_square": 36, "piece_name": "P'", "piece_hand": null }]
-```
 
-Black captures the pawn _en passant_ from d4 (35) to e3 (44):
-
-```json
+// Black
 [
   { "src_square": 35, "dst_square": 36, "piece_name": "p", "piece_hand": null },
   { "src_square": 36, "dst_square": 44, "piece_name": "p", "piece_hand": null }
 ]
 ```
 
-### Cross-Game Capture
+### Hybrid Example
 
-In a hybrid game (e.g., Chess-Makruk crossover),
-a chess knight (`N`) captures a Makruk rook (`r`) at destination square 44.
+A Chess knight captures a Makruk rook in a cross‑variant game.
 
 ```json
 [{ "src_square": 27, "dst_square": 44, "piece_name": "N", "piece_hand": null }]
@@ -239,22 +191,14 @@ a chess knight (`N`) captures a Makruk rook (`r`) at destination square 44.
 
 ## Related Specifications
 
-PMN is part of a family of specifications designed to provide a comprehensive and rule-agnostic representation system for abstract strategy board games:
+* **[Piece Name Notation (PNN)](https://sashite.dev/documents/pnn/1.0.0/)** — piece identifiers.
+* **[Forsyth‑Edwards Enhanced Notation (FEEN)](https://sashite.dev/documents/feen/1.0.0/)** — static positions.
 
-- [Piece Name Notation (PNN)](https://sashite.dev/documents/pnn/1.0.0/) - Defines the format for representing individual pieces.
-- [Forsyth-Edwards Enhanced Notation (FEEN)](https://sashite.dev/documents/feen/1.0.0/) - Defines the format for representing board positions.
-
-Together, these specifications form a complete system for representing both static positions (FEEN) and dynamic transitions (PMN) in arbitrary board games.
-
----
-
-## PMN Implementations
-
-This section lists available libraries and tools that implement the PMN specification, allowing developers to easily integrate this format into their applications.
+## Implementations
 
 ### Ruby
 
-- **[Pmn.rb](https://github.com/sashite/pmn.rb)** - Full implementation of the PMN specification for Ruby, including conversion from/to various formats, as well as support for arbitrary dimensions.
+- **[Pmn.rb](https://github.com/sashite/pmn.rb)** - Library for a reference implementation.
 
 ---
 
